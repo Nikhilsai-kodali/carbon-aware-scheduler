@@ -34,7 +34,6 @@ func main() {
 	defer resp.Body.Close()
 
 	body, _ := io.ReadAll(resp.Body)
-	fmt.Println("Raw response:", string(body))
 
 	var result CarbonResponse
 	if err := json.Unmarshal(body, &result); err != nil {
@@ -44,4 +43,12 @@ func main() {
 
 	fmt.Printf("Zone: %s\nCarbon Intensity: %.2f gCO2eq/kWh\nDatetime: %s\n",
 		result.Zone, result.CarbonIntensity, result.Datetime)
+
+	const carbonThreshold = 250.0 // gCO2eq/kWh — based on Italy's typical daily low (~210) vs high (~320)
+
+	if result.CarbonIntensity <= carbonThreshold {
+		fmt.Println(" Carbon intensity is LOW — safe to run workload now")
+	} else {
+		fmt.Println(" Carbon intensity is HIGH — workload should wait")
+	}
 }
