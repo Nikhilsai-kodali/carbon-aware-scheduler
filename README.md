@@ -39,3 +39,49 @@ grid data for Italy.
 - Add a simple dashboard showing carbon/cost savings over time
 
 ## Architecture (current)
+
+ElectricityMaps API (live carbon intensity, zone=IT)
+↓
+Go program (fetch + threshold logic)
+↓
+Docker container
+↓
+Kubernetes CronJob (runs hourly, reads API key from Secret)
+↓
+Prints decision: run now (LOW) or wait (HIGH)
+
+
+## Tech stack
+- Go
+- Docker
+- Kubernetes (developed/tested on Minikube)
+- ElectricityMaps API
+
+## Setup
+
+1. Get a free API key from [ElectricityMaps](https://www.electricitymaps.com/free-tier)
+2. Build the image inside your Minikube Docker environment:
+    eval $(minikube docker-env)
+    docker build -t carbon-checker:v1 .
+3. Create the Kubernetes Secret:
+    kubectl create secret generic electricitymaps-secret
+    --from-literal=api-key=YOUR_KEY
+4. Apply the CronJob:
+    kubectl apply -f k8s/cronjob.yaml
+5. Trigger a manual test run:
+    kubectl create job --from=cronjob/carbon-checker manual-test
+    kubectl logs -l job-name=manual-test
+
+
+## Lessons learned (real debugging notes)
+- Docker's `buildx` builder can fail to boot its buildkit container in some 
+  local setups — worked around by falling back to the classic builder 
+  (`DOCKER_BUILDKIT=0`)
+- Multiple local Docker daemons/contexts can cause an image built 
+  successfully to still be invisible to Minikube — resolved by explicitly 
+  loading the built image into Minikube (`minikube image load`)
+- `imagePullPolicy: IfNotPresent` can still attempt a remote registry pull 
+  in some cases; `Never` is more reliable for purely local images
+
+## License
+MIT
