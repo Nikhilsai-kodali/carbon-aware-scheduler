@@ -1,0 +1,21 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: carbon-checker
+spec:
+  schedule: "0 * * * *"  # every hour
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: carbon-checker
+            image: carbon-checker:v1
+            imagePullPolicy: Never
+            env:
+            - name: ELECTRICITYMAPS_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: electricitymaps-secret
+                  key: api-key
+          restartPolicy: OnFailure
